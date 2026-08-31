@@ -9,7 +9,9 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.URLBuilder
 import io.ktor.http.contentType
+import io.ktor.http.encodedPath
 import io.ktor.utils.io.readRemaining
 import io.opentelemetry.kotlin.error.SdkErrorHandler
 import io.opentelemetry.kotlin.error.guardOrDefaultSuspend
@@ -32,6 +34,7 @@ internal class OtlpClient(
     private val baseUrl: String,
     private val httpClient: HttpClient,
     private val sdkErrorHandler: SdkErrorHandler,
+    private val signalEndpoint: String? = null,
 ) {
 
     private val contentType = ContentType.parse("application/x-protobuf")
@@ -54,7 +57,11 @@ internal class OtlpClient(
         requestSerializer: () -> ByteArray,
         parsePartialSuccess: (body: ByteArray) -> OtlpPartialSuccess?,
     ): OtlpResponse = sdkErrorHandler.guardOrDefaultSuspend(Unknown, "OTLP export failed") {
-        val url = "$baseUrl/${endpoint.path}"
+        val url = signalEndpoint?.withRootPath() ?: if (baseUrl.endsWith('/')) {
+            "$baseUrl${endpoint.path}"
+        } else {
+            "$baseUrl/${endpoint.path}"
+        }
         val response = httpClient.post(url) {
             compress("gzip")
             contentType(contentType)
@@ -80,6 +87,13 @@ internal class OtlpClient(
             in 500..599 -> ServerError(code, body?.errorMessage)
             else -> Unknown
         }
+    }
+
+    private fun String.withRootPath(): String {
+        val builder = URLBuilder(this)
+        if (builder.encodedPath.isNotEmpty()) return this
+        builder.encodedPath = "/"
+        return builder.buildString()
     }
 
     /**

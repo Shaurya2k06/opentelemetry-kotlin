@@ -16,9 +16,16 @@ internal const val DEFAULT_OTLP_HTTP_ENDPOINT = "http://localhost:4318"
 public interface OtlpHttpExporterConfigDsl {
 
     /**
-     * Collector base URL. Defaults to `http://localhost:4318`.
+     * Signal-agnostic collector base URL. The signal path is appended automatically.
+     * Defaults to `http://localhost:4318`.
      */
     public var endpoint: String
+
+    /**
+     * Signal-specific endpoint URL. When set, this URL is used instead of [endpoint] without
+     * modification, except that a URL without a path uses the root path `/`.
+     */
+    public var signalEndpoint: String?
 
     /**
      * HTTP request timeout in milliseconds. Defaults to 10 seconds.
@@ -46,6 +53,7 @@ public interface OtlpHttpExporterConfigDsl {
 
 internal class OtlpHttpExporterConfig : OtlpHttpExporterConfigDsl {
     override var endpoint: String = DEFAULT_OTLP_HTTP_ENDPOINT
+    override var signalEndpoint: String? = null
     override var timeoutMs: Long = EXPORT_REQUEST_TIMEOUT_MS
     override var httpClientEngine: HttpClientEngine? = null
     override var httpClient: HttpClient? = null
@@ -64,5 +72,6 @@ internal fun createOtlpHttpClient(
         baseUrl = config.endpoint,
         httpClient = httpClient,
         sdkErrorHandler = sdkErrorHandler,
+        signalEndpoint = config.signalEndpoint,
     )
 }

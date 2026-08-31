@@ -120,6 +120,49 @@ internal class OtlpClientTest {
     }
 
     @Test
+    fun testBaseEndpointWithTrailingSlashAppendsTracePath() = runTest {
+        useEndpoint("$baseUrl/")
+        mockResponseStatus = HttpStatusCode.OK
+
+        client.exportTraces(spans)
+
+        assertEquals("$baseUrl/v1/traces", server.requestHistory.single().url.toString())
+    }
+
+    @Test
+    fun testBaseEndpointWithPathAppendsLogPath() = runTest {
+        useEndpoint("$baseUrl/custom/")
+        mockResponseStatus = HttpStatusCode.OK
+
+        client.exportLogs(logRecords)
+
+        assertEquals("$baseUrl/custom/v1/logs", server.requestHistory.single().url.toString())
+    }
+
+    @Test
+    fun testSignalEndpointTakesPrecedenceForTraces() = runTest {
+        val signalEndpoint = "$baseUrl/custom/traces/"
+        useEndpoint("$baseUrl/ignored", signalEndpoint)
+        mockResponseStatus = HttpStatusCode.OK
+
+        client.exportTraces(spans)
+
+        assertEquals(signalEndpoint, server.requestHistory.single().url.toString())
+    }
+
+    @Test
+    fun testSignalEndpointWithoutPathUsesRootForLogs() = runTest {
+        useEndpoint("$baseUrl/ignored", baseUrl)
+        mockResponseStatus = HttpStatusCode.OK
+
+        client.exportLogs(logRecords)
+
+        val url = server.requestHistory.single().url
+        assertEquals("$baseUrl/", url.toString())
+        assertEquals("/", url.encodedPath)
+    }
+
+    @Test
     fun testExportMultiTraceSuccess() = runTest {
         sendAndAssertTraceRequest(
             telemetry = listOf(
@@ -427,5 +470,14 @@ internal class OtlpClientTest {
     private fun useRequestTimeout() {
         val httpClient = createDefaultHttpClient(requestTimeoutMs, server)
         client = OtlpClient(baseUrl, httpClient = httpClient, sdkErrorHandler = NoopSdkErrorHandler)
+    }
+
+    private fun useEndpoint(baseUrl: String, signalEndpoint: String? = null) {
+        client = OtlpClient(
+            baseUrl = baseUrl,
+            httpClient = createDefaultHttpClient(INFINITE_TIMEOUT_MS, server),
+            sdkErrorHandler = NoopSdkErrorHandler,
+            signalEndpoint = signalEndpoint,
+        )
     }
 }

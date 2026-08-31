@@ -136,6 +136,28 @@ internal class OtlpHttpSpanExporterTest {
     }
 
     @Test
+    fun testFactoryUsesSignalEndpoint() = runTest {
+        val signalEndpoint = "$baseUrl/custom/traces"
+        val customServer = MockEngine {
+            respond(content = ByteReadChannel(""), status = HttpStatusCode.OK)
+        }
+        val customExporter = fakeConfig().otlpHttpSpanExporter {
+            endpoint = "$baseUrl/ignored"
+            this.signalEndpoint = signalEndpoint
+            httpClient = HttpClient(customServer)
+        }
+
+        customExporter.export(spans)
+
+        withTimeout(1000) {
+            while (customServer.requestHistory.isEmpty()) {
+                delay(1L)
+            }
+        }
+        assertEquals(signalEndpoint, customServer.requestHistory.single().url.toString())
+    }
+
+    @Test
     fun testDefaultFactoryUsesSharedRegistryClient() {
         HttpClientRegistry.clear()
         val config = fakeConfig()
