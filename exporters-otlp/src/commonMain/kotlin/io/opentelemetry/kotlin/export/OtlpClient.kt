@@ -59,9 +59,15 @@ internal class OtlpClient(
     ): OtlpResponse = sdkErrorHandler.guardOrDefaultSuspend(Unknown, "OTLP export failed") {
         val url = signalEndpoint?.let {
             val builder = URLBuilder(it)
-            if (builder.encodedPath.isEmpty()) builder.encodedPath = "/"
+            if (builder.encodedPath.isEmpty()) {
+                builder.encodedPath = "/"
+            }
             builder.buildString()
-        } ?: if (baseUrl.endsWith('/')) "$baseUrl${endpoint.path}" else "$baseUrl/${endpoint.path}"
+        } ?: if (baseUrl.endsWith('/')) {
+            "$baseUrl${endpoint.path}"
+        } else {
+            "$baseUrl/${endpoint.path}"
+        }
         val response = httpClient.post(url) {
             compress("gzip")
             contentType(contentType)
