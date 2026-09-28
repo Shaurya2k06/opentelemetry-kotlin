@@ -1,8 +1,18 @@
+public final class io/opentelemetry/kotlin/export/OtlpHttpCompression : java/lang/Enum {
+	public static final field GZIP Lio/opentelemetry/kotlin/export/OtlpHttpCompression;
+	public static final field NONE Lio/opentelemetry/kotlin/export/OtlpHttpCompression;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/opentelemetry/kotlin/export/OtlpHttpCompression;
+	public static fun values ()[Lio/opentelemetry/kotlin/export/OtlpHttpCompression;
+}
+
 public abstract interface class io/opentelemetry/kotlin/export/OtlpHttpExporterConfigDsl {
+	public abstract fun getCompression ()Lio/opentelemetry/kotlin/export/OtlpHttpCompression;
 	public abstract fun getEndpoint ()Ljava/lang/String;
 	public abstract fun getHttpClient ()Lio/ktor/client/HttpClient;
 	public abstract fun getHttpClientEngine ()Lio/ktor/client/engine/HttpClientEngine;
 	public abstract fun getTimeoutMs ()J
+	public abstract fun setCompression (Lio/opentelemetry/kotlin/export/OtlpHttpCompression;)V
 	public abstract fun setEndpoint (Ljava/lang/String;)V
 	public abstract fun setHttpClient (Lio/ktor/client/HttpClient;)V
 	public abstract fun setHttpClientEngine (Lio/ktor/client/engine/HttpClientEngine;)V

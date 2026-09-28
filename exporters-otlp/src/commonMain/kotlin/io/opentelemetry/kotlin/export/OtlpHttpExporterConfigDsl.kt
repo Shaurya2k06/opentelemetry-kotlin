@@ -21,6 +21,9 @@ public interface OtlpHttpExporterConfigDsl {
      */
     public var endpoint: String
 
+    /** Request compression. Defaults to [OtlpHttpCompression.GZIP]. */
+    public var compression: OtlpHttpCompression
+
     /**
      * HTTP request timeout in milliseconds. Defaults to 10 seconds.
      * Ignored when [httpClient] is set.
@@ -47,6 +50,7 @@ public interface OtlpHttpExporterConfigDsl {
 
 internal class OtlpHttpExporterConfig : OtlpHttpExporterConfigDsl {
     override var endpoint: String = DEFAULT_OTLP_HTTP_ENDPOINT
+    override var compression: OtlpHttpCompression = OtlpHttpCompression.GZIP
     override var timeoutMs: Long = EXPORT_REQUEST_TIMEOUT_MS
     override var httpClientEngine: HttpClientEngine? = null
     override var httpClient: HttpClient? = null
@@ -79,5 +83,6 @@ internal fun createOtlpHttpClient(
         baseUrl = endpoint,
         httpClient = httpClient,
         sdkErrorHandler = sdkErrorHandler,
+        compression = config.compression,
     )
 }

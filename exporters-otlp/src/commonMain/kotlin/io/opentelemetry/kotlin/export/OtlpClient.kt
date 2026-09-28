@@ -32,6 +32,7 @@ internal class OtlpClient(
     val baseUrl: String,
     private val httpClient: HttpClient,
     private val sdkErrorHandler: SdkErrorHandler,
+    private val compression: OtlpHttpCompression = OtlpHttpCompression.GZIP,
 ) {
 
     private val contentType = ContentType.parse("application/x-protobuf")
@@ -56,7 +57,7 @@ internal class OtlpClient(
     ): OtlpResponse = sdkErrorHandler.guardOrDefaultSuspend(Unknown, "OTLP export failed") {
         val url = "$baseUrl/${endpoint.path}"
         val response = httpClient.post(url) {
-            compress("gzip")
+            if (compression == OtlpHttpCompression.GZIP) compress("gzip")
             contentType(contentType)
             header(HttpHeaders.UserAgent, userAgent)
             setBody(requestSerializer())

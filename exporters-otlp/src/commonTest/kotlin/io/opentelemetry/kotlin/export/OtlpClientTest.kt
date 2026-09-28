@@ -86,6 +86,20 @@ internal class OtlpClientTest {
     }
 
     @Test
+    fun testCompressionNoneSendsUncompressedLog() = runTest {
+        mockResponseStatus = HttpStatusCode.OK
+        client = createOtlpHttpClient(errorHandler) {
+            httpClient = createDefaultHttpClient(INFINITE_TIMEOUT_MS, server)
+            compression = OtlpHttpCompression.NONE
+        }
+
+        client.exportLogs(logRecords)
+
+        assertNull(server.requestHistory.single().body.headers[HttpHeaders.ContentEncoding])
+        assertContentEquals(logRecords.toProtobufByteArray(), compressedRequestBody)
+    }
+
+    @Test
     fun testExportMultiLogSuccess() = runTest {
         sendAndAssertLogRequest(
             telemetry = listOf(
