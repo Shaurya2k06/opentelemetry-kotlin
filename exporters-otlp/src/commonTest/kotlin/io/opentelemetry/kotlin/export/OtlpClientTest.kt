@@ -125,6 +125,37 @@ internal class OtlpClientTest {
     }
 
     @Test
+    fun testBaseEndpointPreservesPathAndTrailingSlash() = runTest {
+        mockResponseStatus = HttpStatusCode.OK
+        client = OtlpClient("$baseUrl/collector/", createDefaultHttpClient(INFINITE_TIMEOUT_MS, server), errorHandler)
+
+        client.exportTraces(spans)
+
+        assertEquals("$baseUrl/collector/v1/traces", server.requestHistory.single().url.toString())
+    }
+
+    @Test
+    fun testSignalEndpointUsedAsIsForLogs() = runTest {
+        mockResponseStatus = HttpStatusCode.OK
+        val url = "$baseUrl/custom/logs/"
+        client = OtlpClient(baseUrl, createDefaultHttpClient(INFINITE_TIMEOUT_MS, server), errorHandler, url)
+
+        client.exportLogs(logRecords)
+
+        assertEquals(url, server.requestHistory.single().url.toString())
+    }
+
+    @Test
+    fun testSignalEndpointWithoutPathUsesRootForTraces() = runTest {
+        mockResponseStatus = HttpStatusCode.OK
+        client = OtlpClient(baseUrl, createDefaultHttpClient(INFINITE_TIMEOUT_MS, server), errorHandler, baseUrl)
+
+        client.exportTraces(spans)
+
+        assertEquals("$baseUrl/", server.requestHistory.single().url.toString())
+    }
+
+    @Test
     fun testExportMultiTraceSuccess() = runTest {
         sendAndAssertTraceRequest(
             telemetry = listOf(
@@ -225,6 +256,15 @@ internal class OtlpClientTest {
         }
         assertEquals(DEFAULT_OTLP_HTTP_ENDPOINT, createdClient.baseUrl)
         assertEquals(2, fakeHandler.apiMisuses.size)
+    }
+
+    @Test
+    fun testBlankSignalEndpointFallsBackToBaseEndpoint() {
+        val fakeHandler = FakeSdkErrorHandler()
+        val createdClient = createOtlpHttpClient(fakeHandler) { signalEndpoint = " " }
+
+        assertEquals(null, createdClient.signalEndpoint)
+        assertEquals(1, fakeHandler.apiMisuses.size)
     }
 
     @Test

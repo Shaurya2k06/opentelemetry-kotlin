@@ -2,10 +2,12 @@ public abstract interface class io/opentelemetry/kotlin/export/OtlpHttpExporterC
 	public abstract fun getEndpoint ()Ljava/lang/String;
 	public abstract fun getHttpClient ()Lio/ktor/client/HttpClient;
 	public abstract fun getHttpClientEngine ()Lio/ktor/client/engine/HttpClientEngine;
+	public abstract fun getSignalEndpoint ()Ljava/lang/String;
 	public abstract fun getTimeoutMs ()J
 	public abstract fun setEndpoint (Ljava/lang/String;)V
 	public abstract fun setHttpClient (Lio/ktor/client/HttpClient;)V
 	public abstract fun setHttpClientEngine (Lio/ktor/client/engine/HttpClientEngine;)V
+	public abstract fun setSignalEndpoint (Ljava/lang/String;)V
 	public abstract fun setTimeoutMs (J)V
 }
 

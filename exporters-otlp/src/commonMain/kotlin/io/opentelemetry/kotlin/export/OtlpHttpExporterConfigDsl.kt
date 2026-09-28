@@ -17,9 +17,15 @@ internal const val DEFAULT_OTLP_HTTP_ENDPOINT = "http://localhost:4318"
 public interface OtlpHttpExporterConfigDsl {
 
     /**
-     * Collector base URL. Defaults to `http://localhost:4318`.
+     * Signal-agnostic collector base URL. The signal path is appended automatically.
+     * Defaults to `http://localhost:4318`.
      */
     public var endpoint: String
+
+    /**
+     * Signal-specific URL, used as-is instead of [endpoint]. A URL without a path uses `/`.
+     */
+    public var signalEndpoint: String?
 
     /**
      * HTTP request timeout in milliseconds. Defaults to 10 seconds.
@@ -47,6 +53,7 @@ public interface OtlpHttpExporterConfigDsl {
 
 internal class OtlpHttpExporterConfig : OtlpHttpExporterConfigDsl {
     override var endpoint: String = DEFAULT_OTLP_HTTP_ENDPOINT
+    override var signalEndpoint: String? = null
     override var timeoutMs: Long = EXPORT_REQUEST_TIMEOUT_MS
     override var httpClientEngine: HttpClientEngine? = null
     override var httpClient: HttpClient? = null
@@ -71,6 +78,13 @@ internal fun createOtlpHttpClient(
         value = config.timeoutMs,
         default = EXPORT_REQUEST_TIMEOUT_MS,
     ) { it > 0 }
+    val signalEndpoint = validateOrUseDefault(
+        sdkErrorHandler = sdkErrorHandler,
+        api = "OtlpHttpExporterConfig",
+        configParameterName = "signalEndpoint",
+        value = config.signalEndpoint,
+        default = null,
+    ) { it == null || it.isNotBlank() }
     val httpClient = config.httpClient ?: HttpClientRegistry.getOrCreate(
         engine = config.httpClientEngine,
         requestTimeoutMs = timeoutMs,
@@ -79,5 +93,6 @@ internal fun createOtlpHttpClient(
         baseUrl = endpoint,
         httpClient = httpClient,
         sdkErrorHandler = sdkErrorHandler,
+        signalEndpoint = signalEndpoint,
     )
 }
