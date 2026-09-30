@@ -73,17 +73,28 @@ internal fun createOtlpHttpClient(
     block: OtlpHttpExporterConfigDsl.() -> Unit,
 ): OtlpClient {
     val config = OtlpHttpExporterConfig().apply(block)
-    val signalEndpoint = if (config.endpointConfigured) null else readEndpointEnvVar(
-        "OTEL_EXPORTER_OTLP_${signal.name.uppercase()}_ENDPOINT",
-        getEnvVar,
-    )
-    val envEndpoint = if (config.endpointConfigured || signalEndpoint != null) null else
+    val signalEndpoint = if (config.endpointConfigured) {
+        null
+    } else {
+        readEndpointEnvVar(
+            "OTEL_EXPORTER_OTLP_${signal.name.uppercase()}_ENDPOINT",
+            getEnvVar,
+        )
+    }
+    val envEndpoint = if (config.endpointConfigured || signalEndpoint != null) {
+        null
+    } else {
         readEndpointEnvVar("OTEL_EXPORTER_OTLP_ENDPOINT", getEnvVar)
+    }
     val endpoint = validateOrUseDefault(
         sdkErrorHandler = sdkErrorHandler,
         api = "OtlpHttpExporterConfig",
         configParameterName = "endpoint",
-        value = if (config.endpointConfigured) config.endpoint else envEndpoint ?: config.endpoint,
+        value = if (config.endpointConfigured) {
+            config.endpoint
+        } else {
+            envEndpoint ?: config.endpoint
+        },
         default = DEFAULT_OTLP_HTTP_ENDPOINT,
     ) { it.isNotBlank() }
     val timeoutMs = validateOrUseDefault(
