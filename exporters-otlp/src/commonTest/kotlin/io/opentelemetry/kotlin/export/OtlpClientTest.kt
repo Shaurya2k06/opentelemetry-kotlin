@@ -302,11 +302,10 @@ internal class OtlpClientTest {
         assertEquals("$baseUrl/logs", create(OtlpEndpoint.Logs).signalEndpoint)
         assertEquals(null, create(OtlpEndpoint.Traces) { endpoint = "$baseUrl/user" }.signalEndpoint)
         assertEquals("$baseUrl/user", create(OtlpEndpoint.Traces) { endpoint = "$baseUrl/user" }.baseUrl)
-        assertEquals("$baseUrl/base", createOtlpHttpClient(
-            errorHandler,
-            OtlpEndpoint.Traces,
-            getEnvVar = { name -> if (name == "OTEL_EXPORTER_OTLP_ENDPOINT") "$baseUrl/base" else " " },
-        ) {}.baseUrl)
+        val genericValues = values - "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+        val genericClient = createOtlpHttpClient(errorHandler, OtlpEndpoint.Traces, genericValues::get) {}
+        assertEquals("$baseUrl/base", genericClient.baseUrl)
+        assertEquals(null, genericClient.signalEndpoint)
     }
 
     @Test
