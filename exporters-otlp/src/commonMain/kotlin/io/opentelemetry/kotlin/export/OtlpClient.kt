@@ -35,6 +35,7 @@ internal class OtlpClient(
     private val httpClient: HttpClient,
     private val sdkErrorHandler: SdkErrorHandler,
     internal val signalEndpoint: String? = null,
+    private val headers: suspend () -> Map<String, String> = { emptyMap() },
 ) {
 
     private val contentType = ContentType.parse("application/x-protobuf")
@@ -68,10 +69,12 @@ internal class OtlpClient(
         } else {
             "$baseUrl/${endpoint.path}"
         }
+        val requestHeaders = headers()
         val response = httpClient.post(url) {
             compress("gzip")
             contentType(contentType)
             header(HttpHeaders.UserAgent, userAgent)
+            requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(requestSerializer())
         }
         // A 200 can still be a partial success and error responses can carry an error message,

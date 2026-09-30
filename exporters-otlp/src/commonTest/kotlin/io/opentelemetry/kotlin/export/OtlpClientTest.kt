@@ -248,9 +248,39 @@ internal class OtlpClientTest {
     }
 
     @Test
+    fun testHeadersAreProvidedForEachSignalRequest() = runTest {
+        mockResponseStatus = HttpStatusCode.OK
+        var token = "first"
+        client = createOtlpHttpClient(errorHandler, OtlpEndpoint.Traces, getEnvVar = { null }) {
+            httpClient = createDefaultHttpClient(INFINITE_TIMEOUT_MS, server)
+            headers = { mapOf(HttpHeaders.Authorization to "Bearer $token") }
+        }
+
+        assertEquals(OtlpResponse.Success, client.exportTraces(spans))
+        token = "second"
+        assertEquals(OtlpResponse.Success, client.exportLogs(logRecords))
+
+        assertEquals("Bearer first", server.requestHistory[0].headers[HttpHeaders.Authorization])
+        assertEquals("Bearer second", server.requestHistory[1].headers[HttpHeaders.Authorization])
+        assertEquals(expectedUserAgent, server.requestHistory[0].headers[HttpHeaders.UserAgent])
+    }
+
+    @Test
+    fun testHeaderProviderFailureIsReportedWithoutSending() = runTest {
+        client = createOtlpHttpClient(errorHandler, OtlpEndpoint.Traces, getEnvVar = { null }) {
+            httpClient = createDefaultHttpClient(INFINITE_TIMEOUT_MS, server)
+            headers = { error("token refresh failed") }
+        }
+
+        assertEquals(OtlpResponse.Unknown, client.exportTraces(spans))
+        assertEquals(1, errorHandler.userCodeErrors.size)
+        assertEquals(0, server.requestHistory.size)
+    }
+
+    @Test
     fun testCreateOtlpHttpClientInvalidValuesFallBackToDefault() {
         val fakeHandler = FakeSdkErrorHandler()
-        val createdClient = createOtlpHttpClient(fakeHandler) {
+        val createdClient = createOtlpHttpClient(fakeHandler, OtlpEndpoint.Traces, getEnvVar = { null }) {
             endpoint = ""
             timeoutMs = -1
         }
@@ -259,12 +289,24 @@ internal class OtlpClientTest {
     }
 
     @Test
-    fun testBlankSignalEndpointFallsBackToBaseEndpoint() {
-        val fakeHandler = FakeSdkErrorHandler()
-        val createdClient = createOtlpHttpClient(fakeHandler) { signalEndpoint = " " }
+    fun testEndpointEnvironmentPrecedence() {
+        val values = mapOf(
+            "OTEL_EXPORTER_OTLP_ENDPOINT" to "$baseUrl/base",
+            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT" to "$baseUrl/traces",
+            "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT" to "$baseUrl/logs",
+        )
+        fun create(signal: OtlpEndpoint, block: OtlpHttpExporterConfigDsl.() -> Unit = {}) =
+            createOtlpHttpClient(errorHandler, signal, values::get, block)
 
-        assertEquals(null, createdClient.signalEndpoint)
-        assertEquals(1, fakeHandler.apiMisuses.size)
+        assertEquals("$baseUrl/traces", create(OtlpEndpoint.Traces).signalEndpoint)
+        assertEquals("$baseUrl/logs", create(OtlpEndpoint.Logs).signalEndpoint)
+        assertEquals(null, create(OtlpEndpoint.Traces) { endpoint = "$baseUrl/user" }.signalEndpoint)
+        assertEquals("$baseUrl/user", create(OtlpEndpoint.Traces) { endpoint = "$baseUrl/user" }.baseUrl)
+        assertEquals("$baseUrl/base", createOtlpHttpClient(
+            errorHandler,
+            OtlpEndpoint.Traces,
+            getEnvVar = { name -> if (name == "OTEL_EXPORTER_OTLP_ENDPOINT") "$baseUrl/base" else " " },
+        ) {}.baseUrl)
     }
 
     @Test
