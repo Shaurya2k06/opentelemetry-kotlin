@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpsExchange
 import com.sun.net.httpserver.HttpsServer
 import io.opentelemetry.kotlin.error.NoopSdkErrorHandler
 import io.opentelemetry.kotlin.tracing.data.FakeSpanData
+import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 import java.security.KeyStore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -14,7 +15,6 @@ import javax.net.ssl.TrustManagerFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.runBlocking
 
 internal class OtlpHttpTlsTest {
 
