@@ -28,13 +28,13 @@ kotlin {
                 implementation(project(":sdk-api"))
                 implementation(project(":config"))
                 implementation(project(":context-impl"))
+                implementation(project(":propagation-utils"))
                 implementation(project(":config-dsl"))
                 implementation(project(":model"))
                 implementation(project(":platform-implementations"))
                 implementation(project(":semconv"))
                 implementation(project(":exporters-core"))
                 implementation(project(":noop"))
-                implementation(project(":api-propagators"))
                 implementation(project(":semconv"))
                 implementation(libs.kotlinx.coroutines)
             }
@@ -55,6 +55,7 @@ kotlin {
                 implementation(project(":integration-test"))
                 implementation(project.dependencies.platform(libs.opentelemetry.bom))
                 implementation(libs.opentelemetry.api)
+                implementation(libs.opentelemetry.sdk)
             }
         }
     }
